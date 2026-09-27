@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Daily — Habit Journal</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111113">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ============================= TOKENS ============================= */
+:root{
+  --bg:#111113;
+  --card:#1c1c1f;
+  --card-2:#242428;
+  --seg-empty:#333338;
+  --text:#f2f2f4;
+  --text-dim:#96969e;
+  --text-faint:#5c5c64;
+  --orange:#f2a93c;
+  --green:#33c17a;
+  --green-dim:#1f7a4d;
+  --red:#e6584f;
+  --red-dim:#8f342e;
+  --blue:#5b8cff;
+  --border:#2b2b30;
+  --radius-lg:18px;
+  --radius-md:14px;
+  --radius-sm:10px;
+  --shadow:0 6px 20px rgba(0,0,0,.35);
+  --font:'Roboto',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f0f0f3;
+  --card:#ffffff;
+  --card-2:#eeeef1;
+  --seg-empty:#dcdce1;
+  --text:#1a1a1e;
+  --text-dim:#68686f;
+  --text-faint:#a2a2a8;
+  --border:#e2e2e6;
+  --shadow:0 6px 20px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:var(--font);
+  background:#000;
+  color:var(--text);
+  overflow-x:hidden;
+}
+button{font-family:inherit;}
+input,select,textarea{font-family:inherit;}
+
+/* ============================= APP SHELL ============================= */
+#app-shell{
+  max-width:430px;
+  margin:0 auto;
+  min-height:100vh;
+  background:var(--bg);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+@media (min-width:560px){
+  body{
+    background:linear-gradient(160deg,#08080a,#1a1a1f);
+    display:flex;
+    justify-content:center;
+    padding:28px 0;
+    min-height:100vh;
+  }
+  #app-shell{
+    min-height:844px;
+    height:844px;
+    border-radius:36px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 8px #0b0b0d, 0 0 0 9px #2a2a30;
+    overflow:hidden;
+  }
+}
+
+#page-container{
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-bottom:96px;
+  -webkit-overflow-scrolling:touch;
+}
+.page{display:none;}
+.page.active{display:block; animation:fadeIn .22s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+/* ============================= HEADER ============================= */
+.page-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 18px 6px;
+}
+.icon-btn{
+  width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  border:none;background:transparent;color:var(--text);
+  font-size:19px;border-radius:50%;
+  transition:background .15s ease, transform .1s ease;
+  cursor:pointer;
+}
+.icon-btn:active{transform:scale(.9); background:var(--card-2);}
+.page-title{
+  font-size:24px;font-weight:700;letter-spacing:-.3px;
+  display:flex;align-items:center;gap:10px;
+}
+.page-title .nav-arrow{
+  font-size:13px;color:var(--text-faint);cursor:pointer;padding:6px;
+}
+.page-title .nav-arrow:active{color:var(--text);}
+.simple-title{
+  padding:20px 18px 4px;
+  font-size:24px;font-weight:700;text-align:center;letter-spacing:-.3px;
+}
+
+/* ============================= WEEKDAY SELECTOR ============================= */
+.weekday-row{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 14px 18px;
+  gap:4px;
+}
+.weekday-item{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 0;
+  border-radius:var(--radius-md);
+  cursor:pointer;
+  transition:background .15s ease;
+  color:var(--text-dim);
+}
+.weekday-item .wd-label{font-size:13px;font-weight:500;}
+.weekday-item .wd-num{font-size:11px;color:var(--text-faint);}
+.weekday-item.today .wd-label{color:var(--orange);font-weight:700;}
+.weekday-item.today .wd-num{color:var(--orange);}
+.weekday-item.selected{background:var(--card-2);}
+.weekday-item.selected .wd-label{color:var(--text);font-weight:700;}
+.weekday-item:active{transform:scale(.95);}
+
+/* ============================= CATEGORY CARD ============================= */
+.categories-wrap{padding:6px 18px 10px;}
+.category-block{margin-bottom:26px;}
+.category-block-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.category-name{font-size:18px;font-weight:700;}
+.category-menu-btn{
+  border:none;background:transparent;color:var(--text-faint);
+  font-size:16px;padding:6px 8px;cursor:pointer;border-radius:8px;
+}
+.category-menu-btn:active{background:var(--card-2);}
+.segment-row{
+  display:flex;gap:5px;
+}
+.segment{
+  flex:1;
+  height:44px;
+  border-radius:10px;
+  background:var(--seg-empty);
+  cursor:pointer;
+  transition:background .25s cubic-bezier(.4,0,.2,1), transform .1s ease;
+  position:relative;
+}
+.segment:active{transform:scale(.94);}
+.segment.green{background:var(--green);}
+.segment.red{background:var(--red);}
+.segment.is-today::after{
+  content:'';
+  position:absolute;
+  inset:-3px;
+  border:2px solid var(--orange);
+  border-radius:12px;
+  pointer-events:none;
+}
+.empty-categories{
+  text-align:center;color:var(--text-faint);
+  padding:60px 20px;font-size:14px;line-height:1.6;
+}
+.empty-categories button{margin-top:14px;}
+
+.add-category-fab{
+  position:absolute;
+  bottom:110px;right:20px;
+  width:52px;height:52px;border-radius:50%;
+  background:var(--blue);color:#fff;border:none;
+  font-size:20px;box-shadow:0 8px 20px rgba(91,140,255,.4);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:transform .12s ease;
+  z-index:20;
+}
+.add-category-fab:active{transform:scale(.9);}
+
+/* ============================= TREND PAGE ============================= */
+.trend-select-wrap{padding:0 18px 14px;}
+.trend-select{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-size:15px;font-weight:500;
+  padding:12px 14px;border-radius:var(--radius-md);
+  appearance:none;
+  -webkit-appearance:none;
+  cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2396969e' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+}
+.trend-card{
+  margin:0 18px 18px;
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  padding:20px 16px 14px;
+  box-shadow:var(--shadow);
+}
+.trend-card-title{
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:1.2px;
+  color:var(--text-dim);
+  margin-bottom:18px;
+}
+.chart-area{
+  position:relative;
+  height:190px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  padding:0 2px;
+  border-bottom:1px solid var(--border);
+}
+.chart-gridlines{
+  position:absolute;left:0;right:0;top:0;bottom:0;
+  display:flex;flex-direction:column;justify-content:space-between;
+  pointer-events:none;
+}
+.chart-gridlines div{border-top:1px dashed var(--border); height:0;}
+.month-group{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  flex:1;
+  position:relative;
+  z-index:1;
+}
+.bars-pair{
+  display:flex;
+  align-items:flex-end;
+  gap:4px;
+  height:170px;
+}
+.bar-col{
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  width:16px;
+}
+.bar-val{
+  font-size:12px;font-weight:700;margin-bottom:4px;
+  opacity:0;transition:opacity .3s ease .3s;
+}
+.bar-val.show{opacity:1;}
+.bar{
+  width:100%;
+  border-radius:5px 5px 3px 3px;
+  height:0;
+  transition:height .6s cubic-bezier(.22,.9,.3,1);
+}
+.bar.red-bar{background:var(--red);}
+.bar.green-bar{background:var(--green);}
+.month-label{
+  margin-top:8px;font-size:13px;color:var(--text-dim);
+}
+.chart-expand{
+  text-align:center;margin-top:10px;color:var(--orange);cursor:pointer;font-size:14px;
+}
+
+/* ---- range pill selector ---- */
+.trend-range-row{
+  display:flex; gap:6px; margin-top:16px;
+}
+.range-pill{
+  flex:1;
+  background:var(--card-2);
+  border:none;
+  color:var(--text-dim);
+  font-size:13px;font-weight:600;
+  padding:11px 0;
+  border-radius:12px;
+  cursor:pointer;
+  transition:background .15s ease, color .15s ease, transform .1s ease;
+}
+.range-pill:active{transform:scale(.94);}
+.range-pill.active{background:var(--seg-empty); color:var(--text);}
+
+/* ---- display mode toggle row ---- */
+.trend-display-row{
+  display:flex; gap:8px; margin-top:10px;
+}
+.display-toggle-btn{
+  flex:1; height:44px;
+  border:none; border-radius:12px;
+  background:var(--card-2);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:background .15s ease, transform .1s ease;
+  color:var(--text-dim);
+}
+.display-toggle-btn:active{transform:scale(.92);}
+.display-toggle-btn.active{background:var(--seg-empty); color:var(--text);}
+.swatch{width:18px;height:18px;border-radius:6px;display:block;}
+.swatch-green{background:var(--green);}
+.swatch-red{background:var(--red);}
+.swatch-stack{
+  background:linear-gradient(to bottom, var(--red) 0 50%, var(--green) 50% 100%);
+}
+
+/* ---- stacked bar mode ---- */
+.bars-pair.single-mode{justify-content:center;}
+.bars-pair.single-mode .bar-col{width:28px;}
+.bar-stack{
+  width:100%;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  border-radius:5px 5px 3px 3px;
+  overflow:hidden;
+}
+.stack-seg{width:100%; height:0; transition:height .6s cubic-bezier(.22,.9,.3,1);}
+.stack-red-seg{background:var(--red);}
+.stack-green-seg{background:var(--green);}
+
+.summary-list{padding:4px 18px 20px;}
+.summary-item{
+  border-bottom:1px solid var(--border);
+}
+.summary-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 4px;cursor:pointer;
+}
+.summary-head-title{font-size:17px;font-weight:700;}
+.summary-head i{color:var(--text-faint);transition:transform .25s ease;font-size:14px;}
+.summary-item.open .summary-head i{transform:rotate(180deg);}
+.summary-body{
+  max-height:0;overflow:hidden;transition:max-height .32s ease, padding .32s ease;
+  padding:0 4px;
+}
+.summary-item.open .summary-body{max-height:400px;padding:0 4px 18px;}
+.stat-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+}
+.stat-box{
+  background:var(--card);border-radius:var(--radius-md);padding:12px 14px;
+}
+.stat-box .stat-label{font-size:12px;color:var(--text-dim);margin-bottom:4px;}
+.stat-box .stat-value{font-size:19px;font-weight:700;}
+.stat-value.green-txt{color:var(--green);}
+.stat-value.red-txt{color:var(--red);}
+.stat-value.orange-txt{color:var(--orange);}
+
+/* ============================= NOTES PAGE ============================= */
+.search-wrap{padding:0 18px 14px;}
+.search-box{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border-radius:var(--radius-md);
+  padding:11px 14px;border:1px solid var(--border);
+}
+.search-box i{color:var(--text-faint);}
+.search-box input{
+  flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:15px;
+}
+.notes-list{padding:0 18px;}
+.note-card{
+  background:var(--card);border-radius:var(--radius-lg);
+  padding:16px;margin-bottom:12px;
+  box-shadow:var(--shadow);
+  cursor:pointer;
+  transition:transform .12s ease;
+  position:relative;
+}
+.note-card:active{transform:scale(.98);}
+.note-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.note-title{font-size:16px;font-weight:700;flex:1;}
+.note-pin{color:var(--orange);font-size:14px;}
+.note-content{
+  color:var(--text-dim);font-size:14px;margin-top:6px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  line-height:1.4;
+}
+.note-date{color:var(--text-faint);font-size:12px;margin-top:10px;}
+.empty-state{
+  text-align:center;color:var(--text-faint);padding:80px 30px;font-size:14px;line-height:1.6;
+}
+.empty-state i{font-size:36px;margin-bottom:14px;display:block;color:var(--text-faint);}
+
+/* ============================= SETUP PAGE ============================= */
+.setup-section{padding:0 18px 24px;}
+.setup-section-title{
+  font-size:13px;font-weight:700;color:var(--text-faint);
+  text-transform:none;letter-spacing:.3px;
+  margin:22px 0 10px 2px;
+}
+.setup-card{
+  background:var(--card);border-radius:var(--radius-lg);overflow:hidden;
+}
+.setup-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 16px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+}
+.setup-row:last-child{border-bottom:none;}
+.setup-row-label{font-size:15px;font-weight:500;display:flex;align-items:center;gap:12px;}
+.setup-row-label i{color:var(--text-dim);width:18px;text-align:center;}
+.setup-row-value{color:var(--text-dim);font-size:14px;display:flex;align-items:center;gap:8px;}
+.setup-row.danger .setup-row-label{color:var(--red);}
+.setup-row.danger .setup-row-label i{color:var(--red);}
+
+.segmented-toggle{
+  display:flex;background:var(--card-2);border-radius:10px;padding:3px;gap:3px;
+}
+.segmented-toggle button{
+  border:none;background:transparent;color:var(--text-dim);
+  padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .2s ease,color .2s ease;
+}
+.segmented-toggle button.active{background:var(--blue);color:#fff;}
+
+.category-manage-list{padding:6px 0;}
+.category-manage-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+}
+.category-manage-item:last-child{border-bottom:none;}
+.category-manage-actions{display:flex;gap:6px;}
+.category-manage-actions button{
+  border:none;background:var(--card-2);color:var(--text-dim);
+  width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:13px;
+}
+.category-manage-actions button.del-btn{color:var(--red);}
+.category-manage-actions button:active{transform:scale(.9);}
+.add-cat-inline{
+  display:flex;gap:8px;padding:12px 16px;
+}
+.add-cat-inline input{
+  flex:1;background:var(--card-2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;color:var(--text);font-size:14px;outline:none;
+}
+.add-cat-inline button{
+  background:var(--blue);color:#fff;border:none;border-radius:10px;padding:0 16px;
+  font-weight:600;cursor:pointer;font-size:14px;
+}
+
+/* ============================= BOTTOM NAV ============================= */
+#bottom-nav{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  display:flex;
+  background:rgba(20,20,23,.94);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  z-index:30;
+}
+:root[data-theme="light"] #bottom-nav{background:rgba(255,255,255,.92);}
+.nav-item{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 0;background:none;border:none;color:var(--text-faint);
+  cursor:pointer;font-size:10px;font-weight:600;letter-spacing:.2px;
+  transition:color .2s ease, transform .1s ease;
+}
+.nav-item i{font-size:19px;}
+.nav-item.active{color:var(--blue);}
+.nav-item:active{transform:scale(.92);}
+
+/* ============================= DRAWER ============================= */
+#drawer-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:40;
+}
+#drawer-overlay.open{opacity:1;pointer-events:auto;}
+#drawer{
+  position:absolute;top:0;bottom:0;left:0;
+  width:78%;max-width:300px;
+  background:var(--card);
+  transform:translateX(-100%);
+  transition:transform .28s cubic-bezier(.3,.9,.4,1);
+  z-index:41;
+  padding:26px 0 20px;
+  display:flex;flex-direction:column;
+  box-shadow:8px 0 30px rgba(0,0,0,.4);
+}
+#drawer.open{transform:translateX(0);}
+.drawer-brand{
+  display:flex;align-items:center;gap:12px;padding:0 22px 20px;
+  border-bottom:1px solid var(--border);margin-bottom:8px;
+}
+.drawer-brand .brand-icon{
+  width:42px;height:42px;border-radius:12px;background:var(--orange);
+  display:flex;align-items:center;justify-content:center;color:#1a1200;font-size:18px;
+}
+.drawer-brand-text .t1{font-weight:700;font-size:16px;}
+.drawer-brand-text .t2{font-size:12px;color:var(--text-dim);}
+.drawer-link{
+  display:flex;align-items:center;gap:14px;padding:13px 22px;
+  color:var(--text);font-size:15px;cursor:pointer;
+}
+.drawer-link i{width:20px;text-align:center;color:var(--text-dim);}
+.drawer-link:active{background:var(--card-2);}
+.drawer-sub{padding:4px 22px 4px 56px;}
+.drawer-cat-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--card-2);color:var(--text-dim);font-size:12px;
+  padding:6px 10px;border-radius:20px;margin:4px 4px 0 0;
+}
+
+/* ============================= MODAL ============================= */
+#modal-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.6);
+  display:none;align-items:flex-end;justify-content:center;z-index:50;
+}
+#modal-overlay.show{display:flex;}
+@media (min-width:560px){#modal-overlay{align-items:center;}}
+.modal-sheet{
+  background:var(--card);width:100%;
+  border-radius:22px 22px 0 0;
+  padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+  transform:translateY(100%);
+  transition:transform .28s cubic-bezier(.3,.9,.4,1);
+  max-height:85vh;overflow-y:auto;
+}
+@media (min-width:560px){
+  .modal-sheet{max-width:380px;border-radius:22px;transform:translateY(20px) scale(.96); opacity:0;}
+}
+#modal-overlay.show .modal-sheet{transform:translateY(0) scale(1); opacity:1;}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;}
+.modal-body p{color:var(--text-dim);font-size:14px;line-height:1.5;margin:0 0 18px;}
+.modal-input{
+  width:100%;background:var(--card-2);border:1px solid var(--border);
+  border-radius:12px;padding:13px 14px;color:var(--text);font-size:15px;outline:none;
+  margin-bottom:14px;
+}
+.modal-textarea{
+  width:100%;min-height:130px;background:var(--card-2);border:1px solid var(--border);
+  border-radius:12px;padding:13px 14px;color:var(--text);font-size:15px;outline:none;
+  margin-bottom:14px;resize:vertical;font-family:inherit;
+}
+.modal-actions{display:flex;gap:10px;margin-top:4px;}
+.btn{
+  flex:1;padding:13px;border-radius:12px;border:none;font-size:15px;font-weight:600;
+  cursor:pointer;transition:transform .1s ease, opacity .15s ease;
+}
+.btn:active{transform:scale(.96);}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-secondary{background:var(--card-2);color:var(--text);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-full{width:100%;}
+
+/* ============================= TOAST ============================= */
+#toast{
+  position:absolute;
+  bottom:98px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:#2c2c31;color:#fff;
+  padding:12px 20px;border-radius:30px;font-size:14px;font-weight:500;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  z-index:60;white-space:nowrap;max-width:88%;overflow:hidden;text-overflow:ellipsis;
+  display:flex;align-items:center;gap:8px;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast i{color:var(--green);}
+
+::-webkit-scrollbar{width:0;height:0;}
+</style>
+</head>
+<body>
+<div id="app-shell">
+
+  <div id="page-container">
+
+    <!-- ===================== JOURNALS PAGE ===================== -->
+    <section class="page active" id="page-journals">
+      <div class="page-header">
+        <button class="icon-btn" id="btn-drawer"><i class="fa-solid fa-bars"></i></button>
+        <div class="page-title">
+          <span class="nav-arrow" id="week-prev"><i class="fa-solid fa-chevron-left"></i></span>
+          <span id="week-title">This Week</span>
+          <span class="nav-arrow" id="week-next"><i class="fa-solid fa-chevron-right"></i></span>
+        </div>
+        <button class="icon-btn" id="btn-calendar"><i class="fa-regular fa-calendar"></i></button>
+      </div>
+
+      <div class="weekday-row" id="weekday-row"></div>
+
+      <div class="categories-wrap" id="categories-wrap"></div>
+
+      <button class="add-category-fab" id="fab-add-category" title="Add category">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </section>
+
+    <!-- ===================== TREND PAGE ===================== -->
+    <section class="page" id="page-trend">
+      <div class="simple-title" id="trend-current-cat">B. Habit</div>
+
+      <div class="trend-select-wrap">
+        <select class="trend-select" id="trend-cat-select"></select>
+      </div>
+
+      <div class="trend-card">
+        <div class="trend-card-title" id="trend-card-title">6 MONTH TREND</div>
+        <div class="chart-area" id="chart-area">
+          <div class="chart-gridlines"><div></div><div></div><div></div><div></div></div>
+        </div>
+        <div class="chart-expand"><i class="fa-solid fa-chevron-up"></i></div>
+        <div class="trend-range-row" id="trend-range-row">
+          <button class="range-pill" data-range="9m">9m</button>
+          <button class="range-pill active" data-range="6m">6m</button>
+          <button class="range-pill" data-range="6w">6w</button>
+        </div>
+        <div class="trend-display-row" id="trend-display-row">
+          <button class="display-toggle-btn" data-mode="green" aria-label="Completed only"><span class="swatch swatch-green"></span></button>
+          <button class="display-toggle-btn" data-mode="red" aria-label="Failed only"><span class="swatch swatch-red"></span></button>
+          <button class="display-toggle-btn active" data-mode="split" aria-label="Split view"><i class="fa-solid fa-pause"></i></button>
+          <button class="display-toggle-btn" data-mode="stacked" aria-label="Stacked view"><span class="swatch swatch-stack"></span></button>
+        </div>
+      </div>
+
+      <div class="summary-list" id="summary-list"></div>
+    </section>
+
+    <!-- ===================== NOTES PAGE ===================== -->
+    <section class="page" id="page-notes">
+      <div class="page-header">
+        <div class="page-title">Notes</div>
+        <button class="icon-btn" id="btn-add-note"><i class="fa-solid fa-plus"></i></button>
+      </div>
+      <div class="search-wrap">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="note-search" placeholder="Search notes">
+        </div>
+      </div>
+      <div class="notes-list" id="notes-list"></div>
+    </section>
+
+    <!-- ===================== SETUP PAGE ===================== -->
+    <section class="page" id="page-setup">
+      <div class="page-header"><div class="page-title">Setup</div></div>
+
+      <div class="setup-section">
+        <div class="setup-section-title">Appearance</div>
+        <div class="setup-card">
+          <div class="setup-row">
+            <div class="setup-row-label"><i class="fa-solid fa-circle-half-stroke"></i>Theme</div>
+            <div class="segmented-toggle" id="theme-toggle">
+              <button data-val="dark">Dark</button>
+              <button data-val="light">Light</button>
+            </div>
+          </div>
+          <div class="setup-row">
+            <div class="setup-row-label"><i class="fa-solid fa-calendar-week"></i>Week starts on</div>
+            <div class="segmented-toggle" id="weekstart-toggle">
+              <button data-val="monday">Mon</button>
+              <button data-val="sunday">Sun</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-section-title">Categories</div>
+        <div class="setup-card">
+          <div class="category-manage-list" id="category-manage-list"></div>
+          <div class="add-cat-inline">
+            <input type="text" id="new-cat-input" placeholder="New category name">
+            <button id="btn-add-cat-setup">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-section-title">Data</div>
+        <div class="setup-card">
+          <div class="setup-row" id="btn-export">
+            <div class="setup-row-label"><i class="fa-solid fa-file-export"></i>Export data</div>
+            <div class="setup-row-value"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+          <div class="setup-row" id="btn-import">
+            <div class="setup-row-label"><i class="fa-solid fa-file-import"></i>Import data</div>
+            <div class="setup-row-value"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+          <div class="setup-row danger" id="btn-clear-all">
+            <div class="setup-row-label"><i class="fa-solid fa-trash"></i>Clear all data</div>
+            <div class="setup-row-value"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="import-file-input" accept="application/json" style="display:none;">
+    </section>
+
+  </div>
+
+  <!-- ===================== BOTTOM NAV ===================== -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" data-page="journals"><i class="fa-solid fa-circle-check"></i>Journals</button>
+    <button class="nav-item" data-page="trend"><i class="fa-solid fa-chart-simple"></i>Trend</button>
+    <button class="nav-item" data-page="notes"><i class="fa-solid fa-note-sticky"></i>Notes</button>
+    <button class="nav-item" data-page="setup"><i class="fa-solid fa-gear"></i>Setup</button>
+  </nav>
+
+  <!-- ===================== DRAWER ===================== -->
+  <div id="drawer-overlay"></div>
+  <div id="drawer">
+    <div class="drawer-brand">
+      <div class="brand-icon"><i class="fa-solid fa-seedling"></i></div>
+      <div class="drawer-brand-text">
+        <div class="t1">Daily</div>
+        <div class="t2">Habit journal</div>
+      </div>
+    </div>
+    <div class="drawer-link" data-goto="journals"><i class="fa-solid fa-circle-check"></i>Journals</div>
+    <div class="drawer-link" data-goto="trend"><i class="fa-solid fa-chart-simple"></i>Trend</div>
+    <div class="drawer-link" data-goto="notes"><i class="fa-solid fa-note-sticky"></i>Notes</div>
+    <div class="drawer-link" data-goto="setup"><i class="fa-solid fa-gear"></i>Setup</div>
+    <div class="drawer-link" id="drawer-add-cat"><i class="fa-solid fa-plus"></i>Add category</div>
+    <div class="drawer-sub" id="drawer-cat-chips"></div>
+  </div>
+
+  <!-- ===================== MODAL ===================== -->
+  <div id="modal-overlay">
+    <div class="modal-sheet" id="modal-sheet"></div>
+  </div>
+
+  <!-- ===================== TOAST ===================== -->
+  <div id="toast"><i class="fa-solid fa-circle-check"></i><span id="toast-msg"></span></div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   STORAGE / STATE
+============================================================ */
+const STORAGE_KEY = 'dailyHabitAppData_v1';
+
+function defaultData(){
+  return {
+    settings:{ theme:'dark', weekStart:'monday' },
+    categories:[
+      {id:'training', name:'Training and Day'},
+      {id:'prayers', name:'Daily Prayers'},
+      {id:'habit', name:'B. Habit'}
+    ],
+    dailyData:{},
+    notes:[]
+  };
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    // basic shape safety
+    parsed.settings = parsed.settings || {theme:'dark', weekStart:'monday'};
+    parsed.categories = Array.isArray(parsed.categories) ? parsed.categories : [];
+    parsed.dailyData = parsed.dailyData || {};
+    parsed.notes = Array.isArray(parsed.notes) ? parsed.notes : [];
+    return parsed;
+  }catch(e){
+    return defaultData();
+  }
+}
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadData();
+
+/* ============================================================
+   DATE HELPERS
+============================================================ */
+function pad(n){ return n<10 ? '0'+n : ''+n; }
+function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function addDays(d, n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function isSameDay(a,b){ return dateKey(a)===dateKey(b); }
+function startOfDay(d){ const r=new Date(d); r.setHours(0,0,0,0); return r; }
+
+function getWeekStart(date, weekStartsOn){
+  const d = startOfDay(date);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  let diff;
+  if(weekStartsOn === 'sunday'){
+    diff = -day;
+  } else {
+    diff = day===0 ? -6 : 1-day;
+  }
+  return addDays(d, diff);
+}
+
+const WEEKDAY_LABELS_MON = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const WEEKDAY_LABELS_SUN = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WEEKDAY_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function weekLabels(){
+  return state.settings.weekStart === 'sunday' ? WEEKDAY_LABELS_SUN : WEEKDAY_LABELS_MON;
+}
+
+/* ============================================================
+   APP NAV STATE
+============================================================ */
+let currentPage = 'journals';
+let currentWeekStart = getWeekStart(new Date(), state.settings.weekStart);
+let selectedDate = startOfDay(new Date());
+let selectedTrendCat = state.categories[state.categories.length-1] ? state.categories[state.categories.length-1].id : null;
+let selectedTrendRange = '6m'; // one of TREND_RANGES keys
+let trendDisplayMode = 'split'; // 'green' | 'red' | 'split' | 'stacked'
+
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.classList.remove('show'); }, 2200);
+}
+
+/* ============================================================
+   MODAL SYSTEM
+============================================================ */
+const modalOverlay = document.getElementById('modal-overlay');
+const modalSheet = document.getElementById('modal-sheet');
+
+function openModal(html){
+  modalSheet.innerHTML = html;
+  modalOverlay.classList.add('show');
+}
+function closeModal(){
+  modalOverlay.classList.remove('show');
+}
+modalOverlay.addEventListener('click', (e)=>{ if(e.target === modalOverlay) closeModal(); });
+
+function confirmDialog(title, message, confirmLabel, onConfirm, danger){
+  openModal(`
+    <div class="modal-title">${escapeHtml(title)}</div>
+    <div class="modal-body"><p>${escapeHtml(message)}</p></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="cd-cancel">Cancel</button>
+      <button class="btn ${danger?'btn-danger':'btn-primary'}" id="cd-confirm">${escapeHtml(confirmLabel)}</button>
+    </div>
+  `);
+  document.getElementById('cd-cancel').onclick = closeModal;
+  document.getElementById('cd-confirm').onclick = ()=>{ closeModal(); onConfirm(); };
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str==null ? '' : String(str);
+  return d.innerHTML;
+}
+
+/* ============================================================
+   PAGE SWITCHING
+============================================================ */
+function goToPage(page){
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.page === page);
+  });
+  document.getElementById('page-container').scrollTop = 0;
+  closeDrawer();
+  render();
+}
+
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>goToPage(btn.dataset.page));
+});
+
+/* ============================================================
+   DRAWER
+============================================================ */
+const drawer = document.getElementById('drawer');
+const drawerOverlay = document.getElementById('drawer-overlay');
+function openDrawer(){
+  renderDrawerChips();
+  drawer.classList.add('open');
+  drawerOverlay.classList.add('open');
+}
+function closeDrawer(){
+  drawer.classList.remove('open');
+  drawerOverlay.classList.remove('open');
+}
+document.getElementById('btn-drawer').addEventListener('click', openDrawer);
+drawerOverlay.addEventListener('click', closeDrawer);
+document.querySelectorAll('.drawer-link[data-goto]').forEach(el=>{
+  el.addEventListener('click', ()=> goToPage(el.dataset.goto));
+});
+document.getElementById('drawer-add-cat').addEventListener('click', ()=>{
+  closeDrawer();
+  promptAddCategory();
+});
+function renderDrawerChips(){
+  const wrap = document.getElementById('drawer-cat-chips');
+  if(state.categories.length===0){ wrap.innerHTML = `<span style="color:var(--text-faint);font-size:12px;">No categories yet</span>`; return; }
+  wrap.innerHTML = state.categories.map(c=>`<span class="drawer-cat-chip"><i class="fa-solid fa-tag" style="font-size:9px;"></i>${escapeHtml(c.name)}</span>`).join('');
+}
+
+/* ============================================================
+   ID / MISC HELPERS
+============================================================ */
+function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function setDayStatus(catId, key, status){
+  if(!state.dailyData[key]) state.dailyData[key] = {};
+  if(status === undefined){
+    delete state.dailyData[key][catId];
+    if(Object.keys(state.dailyData[key]).length===0) delete state.dailyData[key];
+  } else {
+    state.dailyData[key][catId] = status;
+  }
+  saveData();
+}
+function getDayStatus(catId, key){
+  return state.dailyData[key] ? state.dailyData[key][catId] : undefined;
+}
+
+/* ============================================================
+   RENDER: JOURNALS PAGE
+============================================================ */
+function renderWeekTitle(){
+  const today = startOfDay(new Date());
+  const thisWeekStart = getWeekStart(today, state.settings.weekStart);
+  const title = document.getElementById('week-title');
+  if(isSameDay(currentWeekStart, thisWeekStart)){
+    title.textContent = 'This Week';
+  } else {
+    const end = addDays(currentWeekStart,6);
+    title.textContent = `${currentWeekStart.getDate()} ${MONTH_SHORT[currentWeekStart.getMonth()]} – ${end.getDate()} ${MONTH_SHORT[end.getMonth()]}`;
+  }
+}
+
+function renderWeekdayRow(){
+  const row = document.getElementById('weekday-row');
+  const labels = weekLabels();
+  const today = startOfDay(new Date());
+  row.innerHTML = '';
+  for(let i=0;i<7;i++){
+    const d = addDays(currentWeekStart, i);
+    const isToday = isSameDay(d, today);
+    const isSelected = isSameDay(d, selectedDate);
+    const item = document.createElement('div');
+    item.className = 'weekday-item' + (isToday?' today':'') + (isSelected?' selected':'');
+    item.innerHTML = `<span class="wd-label">${labels[i]}</span><span class="wd-num">${d.getDate()}</span>`;
+    item.addEventListener('click', ()=>{
+      selectedDate = d;
+      renderJournalsPage();
+    });
+    row.appendChild(item);
+  }
+}
+
+function renderCategories(){
+  const wrap = document.getElementById('categories-wrap');
+  if(state.categories.length===0){
+    wrap.innerHTML = `<div class="empty-categories">
+      <div>No categories yet.</div>
+      <div>Add a category to start tracking your days.</div>
+    </div>`;
+    return;
+  }
+  const today = startOfDay(new Date());
+  wrap.innerHTML = state.categories.map(cat=>{
+    const segs = [];
+    for(let i=0;i<7;i++){
+      const d = addDays(currentWeekStart, i);
+      const key = dateKey(d);
+      const status = getDayStatus(cat.id, key);
+      const isToday = isSameDay(d, today);
+      segs.push(`<div class="segment ${status?status:''} ${isToday?'is-today':''}" data-cat="${cat.id}" data-key="${key}"></div>`);
+    }
+    return `<div class="category-block">
+      <div class="category-block-head">
+        <div class="category-name">${escapeHtml(cat.name)}</div>
+        <button class="category-menu-btn" data-cat-menu="${cat.id}"><i class="fa-solid fa-ellipsis"></i></button>
+      </div>
+      <div class="segment-row">${segs.join('')}</div>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.segment').forEach(seg=>{
+    seg.addEventListener('click', ()=>{
+      const catId = seg.dataset.cat;
+      const key = seg.dataset.key;
+      const cat = state.categories.find(c=>c.id===catId);
+      const current = getDayStatus(catId, key);
+      let next;
+      if(!current){ next = 'green'; }
+      else if(current==='green'){ next = 'red'; }
+      else { next = undefined; }
+      setDayStatus(catId, key, next);
+      seg.classList.remove('green','red');
+      if(next) seg.classList.add(next);
+      if(next==='green') showToast(`${cat.name} completed ✓`);
+      else if(next==='red') showToast(`${cat.name} marked incomplete`);
+      else showToast('Entry cleared');
+    });
+  });
+
+  wrap.querySelectorAll('[data-cat-menu]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openCategoryQuickMenu(btn.dataset.catMenu);
+    });
+  });
+}
+
+function openCategoryQuickMenu(catId){
+  const cat = state.categories.find(c=>c.id===catId);
+  if(!cat) return;
+  openModal(`
+    <div class="modal-title">${escapeHtml(cat.name)}</div>
+    <div class="modal-actions" style="flex-direction:column;">
+      <button class="btn btn-secondary btn-full" id="qm-rename">Rename category</button>
+      <button class="btn btn-danger btn-full" id="qm-delete">Delete category</button>
+    </div>
+  `);
+  document.getElementById('qm-rename').onclick = ()=>{ closeModal(); promptRenameCategory(catId); };
+  document.getElementById('qm-delete').onclick = ()=>{ closeModal(); promptDeleteCategory(catId); };
+}
+
+function renderJournalsPage(){
+  renderWeekTitle();
+  renderWeekdayRow();
+  renderCategories();
+}
+
+document.getElementById('week-prev').addEventListener('click', ()=>{
+  currentWeekStart = addDays(currentWeekStart, -7);
+  renderJournalsPage();
+});
+document.getElementById('week-next').addEventListener('click', ()=>{
+  currentWeekStart = addDays(currentWeekStart, 7);
+  renderJournalsPage();
+});
+document.getElementById('btn-calendar').addEventListener('click', ()=>{
+  openModal(`
+    <div class="modal-title">Jump to date</div>
+    <input type="date" class="modal-input" id="jump-date-input" value="${dateKey(selectedDate)}">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="jd-cancel">Cancel</button>
+      <button class="btn btn-primary" id="jd-go">Go</button>
+    </div>
+  `);
+  document.getElementById('jd-cancel').onclick = closeModal;
+  document.getElementById('jd-go').onclick = ()=>{
+    const val = document.getElementById('jump-date-input').value;
+    if(val){
+      const parts = val.split('-').map(Number);
+      const d = new Date(parts[0], parts[1]-1, parts[2]);
+      selectedDate = startOfDay(d);
+      currentWeekStart = getWeekStart(d, state.settings.weekStart);
+      renderJournalsPage();
+    }
+    closeModal();
+  };
+});
+
+document.getElementById('fab-add-category').addEventListener('click', promptAddCategory);
+
+/* ============================================================
+   CATEGORY CRUD (shared: journals fab, drawer, setup page)
+============================================================ */
+function promptAddCategory(){
+  openModal(`
+    <div class="modal-title">Add category</div>
+    <input type="text" class="modal-input" id="ac-input" placeholder="e.g. Reading" maxlength="30">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="ac-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ac-save">Add</button>
+    </div>
+  `);
+  const input = document.getElementById('ac-input');
+  input.focus();
+  document.getElementById('ac-cancel').onclick = closeModal;
+  const save = ()=>{
+    const name = input.value.trim();
+    if(!name){ input.focus(); return; }
+    state.categories.push({id: uid('cat'), name});
+    saveData();
+    closeModal();
+    showToast('Category added');
+    render();
+  };
+  document.getElementById('ac-save').onclick = save;
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') save(); });
+}
+
+function promptRenameCategory(catId){
+  const cat = state.categories.find(c=>c.id===catId);
+  if(!cat) return;
+  openModal(`
+    <div class="modal-title">Rename category</div>
+    <input type="text" class="modal-input" id="rc-input" value="${escapeHtml(cat.name)}" maxlength="30">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="rc-cancel">Cancel</button>
+      <button class="btn btn-primary" id="rc-save">Save</button>
+    </div>
+  `);
+  const input = document.getElementById('rc-input');
+  input.focus(); input.select();
+  document.getElementById('rc-cancel').onclick = closeModal;
+  const save = ()=>{
+    const name = input.value.trim();
+    if(!name) return;
+    cat.name = name;
+    saveData();
+    closeModal();
+    showToast('Category renamed');
+    render();
+  };
+  document.getElementById('rc-save').onclick = save;
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') save(); });
+}
+
+function promptDeleteCategory(catId){
+  const cat = state.categories.find(c=>c.id===catId);
+  if(!cat) return;
+  confirmDialog('Delete category', `Delete "${cat.name}" and all of its tracked data? This can't be undone.`, 'Delete', ()=>{
+    state.categories = state.categories.filter(c=>c.id!==catId);
+    Object.keys(state.dailyData).forEach(key=>{
+      delete state.dailyData[key][catId];
+      if(Object.keys(state.dailyData[key]).length===0) delete state.dailyData[key];
+    });
+    if(selectedTrendCat===catId){
+      selectedTrendCat = state.categories.length ? state.categories[0].id : null;
+    }
+    saveData();
+    showToast('Category deleted');
+    render();
+  }, true);
+}
+
+/* ============================================================
+   STATISTICS ENGINE
+============================================================ */
+function getAllDateKeysForCat(catId){
+  return Object.keys(state.dailyData).filter(k => state.dailyData[k][catId]);
+}
+
+function computeCategoryStats(catId){
+  const keys = getAllDateKeysForCat(catId).sort();
+  let green=0, red=0;
+  const byWeekdayGreen = [0,0,0,0,0,0,0]; // 0=Sun
+  keys.forEach(k=>{
+    const status = state.dailyData[k][catId];
+    if(status==='green') green++;
+    else if(status==='red') red++;
+    if(status==='green'){
+      const parts = k.split('-').map(Number);
+      const d = new Date(parts[0], parts[1]-1, parts[2]);
+      byWeekdayGreen[d.getDay()]++;
+    }
+  });
+  const total = green+red;
+  const successRate = total>0 ? Math.round((green/total)*100) : 0;
+
+  let bestDayIdx = -1, bestDayVal = 0;
+  byWeekdayGreen.forEach((v,i)=>{ if(v>bestDayVal){ bestDayVal=v; bestDayIdx=i; } });
+  const bestDay = bestDayIdx>=0 ? WEEKDAY_FULL[bestDayIdx] : '—';
+
+  // current streak
+  const today = startOfDay(new Date());
+  let cursor = new Date(today);
+  const todayKey = dateKey(today);
+  if(state.dailyData[todayKey] && state.dailyData[todayKey][catId]==='green'){
+    // include today, start countdown from today
+  } else {
+    cursor = addDays(cursor,-1);
+  }
+  let currentStreak = 0;
+  while(true){
+    const k = dateKey(cursor);
+    if(state.dailyData[k] && state.dailyData[k][catId]==='green'){
+      currentStreak++;
+      cursor = addDays(cursor,-1);
+    } else break;
+    if(currentStreak > 3660) break; // safety
+  }
+
+  // longest streak: walk full range day by day
+  let longestStreak = 0;
+  if(keys.length){
+    const firstParts = keys[0].split('-').map(Number);
+    const first = new Date(firstParts[0], firstParts[1]-1, firstParts[2]);
+    let run = 0;
+    let d = new Date(first);
+    const end = today;
+    while(d <= end){
+      const k = dateKey(d);
+      if(state.dailyData[k] && state.dailyData[k][catId]==='green'){
+        run++;
+        if(run>longestStreak) longestStreak = run;
+      } else {
+        run = 0;
+      }
+      d = addDays(d,1);
+    }
+  }
+
+  // this month progress
+  const thisMonthKey = today.getFullYear()+'-'+pad(today.getMonth()+1);
+  let monthGreen=0, monthRed=0;
+  keys.forEach(k=>{
+    if(k.startsWith(thisMonthKey)){
+      const status = state.dailyData[k][catId];
+      if(status==='green') monthGreen++; else if(status==='red') monthRed++;
+    }
+  });
+
+  return { green, red, total, successRate, bestDay, currentStreak, longestStreak, monthGreen, monthRed };
+}
+
+function computeOverallStats(){
+  let green=0, red=0;
+  const byWeekdayGreen = [0,0,0,0,0,0,0];
+  Object.keys(state.dailyData).forEach(k=>{
+    const parts = k.split('-').map(Number);
+    const d = new Date(parts[0], parts[1]-1, parts[2]);
+    Object.values(state.dailyData[k]).forEach(status=>{
+      if(status==='green'){ green++; byWeekdayGreen[d.getDay()]++; }
+      else if(status==='red') red++;
+    });
+  });
+  const total = green+red;
+  const successRate = total>0 ? Math.round((green/total)*100) : 0;
+  let bestDayIdx=-1, bestDayVal=0;
+  byWeekdayGreen.forEach((v,i)=>{ if(v>bestDayVal){bestDayVal=v; bestDayIdx=i;} });
+  const bestDay = bestDayIdx>=0 ? WEEKDAY_FULL[bestDayIdx] : '—';
+
+  // best category by success rate (min 1 entry)
+  let bestCat = null, bestCatRate = -1;
+  state.categories.forEach(c=>{
+    const s = computeCategoryStats(c.id);
+    if(s.total>0 && s.successRate>bestCatRate){ bestCatRate = s.successRate; bestCat = c.name; }
+  });
+
+  return { green, red, total, successRate, bestDay, bestCat, bestCatRate, categoriesCount: state.categories.length };
+}
+
+function getWeekNumber(date){
+  const d = getWeekStart(date, state.settings.weekStart);
+  const yearStart = getWeekStart(new Date(d.getFullYear(),0,1), state.settings.weekStart);
+  const diffDays = Math.round((d - yearStart) / 86400000);
+  return Math.floor(diffDays/7) + 1;
+}
+
+function getLastMonthsData(catId, count){
+  const today = startOfDay(new Date());
+  const months = [];
+  for(let i=count-1;i>=0;i--){
+    const d = new Date(today.getFullYear(), today.getMonth()-i, 1);
+    const monthKey = d.getFullYear()+'-'+pad(d.getMonth()+1);
+    let green=0, red=0;
+    Object.keys(state.dailyData).forEach(k=>{
+      if(k.startsWith(monthKey)){
+        const status = state.dailyData[k][catId];
+        if(status==='green') green++; else if(status==='red') red++;
+      }
+    });
+    months.push({ label: MONTH_SHORT[d.getMonth()], green, red });
+  }
+  return months;
+}
+
+function getLastWeeksData(catId, count){
+  const weekStart = getWeekStart(new Date(), state.settings.weekStart);
+  const weeks = [];
+  for(let i=count-1;i>=0;i--){
+    const start = addDays(weekStart, -7*i);
+    let green=0, red=0;
+    for(let j=0;j<7;j++){
+      const day = addDays(start, j);
+      const key = dateKey(day);
+      const status = state.dailyData[key] && state.dailyData[key][catId];
+      if(status==='green') green++; else if(status==='red') red++;
+    }
+    weeks.push({ label: ''+getWeekNumber(start), green, red });
+  }
+  return weeks;
+}
+
+const TREND_RANGES = {
+  '2y':  { title: '24 MONTH TREND', unit: 'month', count: 24 },
+  '1y':  { title: '12 MONTH TREND', unit: 'month', count: 12 },
+  '9m':  { title: '9 MONTH TREND',  unit: 'month', count: 9 },
+  '6m':  { title: '6 MONTH TREND',  unit: 'month', count: 6 },
+  '12w': { title: '12 WEEK TREND',  unit: 'week',  count: 12 },
+  '6w':  { title: '6 WEEK TREND',   unit: 'week',  count: 6 }
+};
+
+function getRangeData(catId, rangeKey){
+  const cfg = TREND_RANGES[rangeKey] || TREND_RANGES['6m'];
+  return cfg.unit === 'week' ? getLastWeeksData(catId, cfg.count) : getLastMonthsData(catId, cfg.count);
+}
+
+/* ============================================================
+   RENDER: TREND PAGE
+============================================================ */
+function populateTrendSelect(){
+  const sel = document.getElementById('trend-cat-select');
+  sel.innerHTML = state.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  if(state.categories.length===0){
+    sel.innerHTML = `<option value="">No categories</option>`;
+  } else if(!state.categories.find(c=>c.id===selectedTrendCat)){
+    selectedTrendCat = state.categories[state.categories.length-1].id;
+  }
+  sel.value = selectedTrendCat || '';
+}
+
+function buildBarGroupHTML(m, maxVal, mode){
+  if(mode === 'green' || mode === 'red'){
+    const val = mode === 'green' ? m.green : m.red;
+    const h = Math.round((val/maxVal)*170);
+    const barCls = mode === 'green' ? 'green-bar' : 'red-bar';
+    return `
+      <div class="bars-pair single-mode">
+        <div class="bar-col">
+          <span class="bar-val" data-target="${val}">0</span>
+          <div class="bar ${barCls}" data-h="${h}"></div>
+        </div>
+      </div>
+      <div class="month-label">${m.label}</div>
+    `;
+  }
+  if(mode === 'stacked'){
+    const total = m.green + m.red;
+    const totalH = Math.round((total/maxVal)*170);
+    const greenH = total > 0 ? Math.round((m.green/total)*totalH) : 0;
+    const redH = totalH - greenH;
+    return `
+      <div class="bars-pair single-mode">
+        <div class="bar-col">
+          <span class="bar-val" data-target="${total}">0</span>
+          <div class="bar-stack" data-gh="${greenH}" data-rh="${redH}">
+            <div class="stack-seg stack-red-seg"></div>
+            <div class="stack-seg stack-green-seg"></div>
+          </div>
+        </div>
+      </div>
+      <div class="month-label">${m.label}</div>
+    `;
+  }
+  // split (default): red and green bars side by side
+  const redH = Math.round((m.red/maxVal)*170);
+  const greenH = Math.round((m.green/maxVal)*170);
+  return `
+    <div class="bars-pair">
+      <div class="bar-col">
+        <span class="bar-val" data-target="${m.red}">0</span>
+        <div class="bar red-bar" data-h="${redH}"></div>
+      </div>
+      <div class="bar-col">
+        <span class="bar-val" data-target="${m.green}">0</span>
+        <div class="bar green-bar" data-h="${greenH}"></div>
+      </div>
+    </div>
+    <div class="month-label">${m.label}</div>
+  `;
+}
+
+function renderChart(){
+  const area = document.getElementById('chart-area');
+  const rangeCfg = TREND_RANGES[selectedTrendRange] || TREND_RANGES['6m'];
+  const titleEl = document.getElementById('trend-card-title');
+  if(titleEl) titleEl.textContent = rangeCfg.title;
+  area.querySelectorAll('.month-group').forEach(el=>el.remove());
+  if(!selectedTrendCat){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'width:100%;text-align:center;color:var(--text-faint);font-size:13px;padding-bottom:20px;';
+    empty.textContent = 'No category selected';
+    area.appendChild(empty);
+    return;
+  }
+  const data = getRangeData(selectedTrendCat, selectedTrendRange);
+  let maxVal;
+  if(trendDisplayMode === 'stacked') maxVal = Math.max(1, ...data.map(m=>m.green+m.red));
+  else if(trendDisplayMode === 'green') maxVal = Math.max(1, ...data.map(m=>m.green));
+  else if(trendDisplayMode === 'red') maxVal = Math.max(1, ...data.map(m=>m.red));
+  else maxVal = Math.max(1, ...data.map(m=>Math.max(m.green,m.red)));
+
+  data.forEach(m=>{
+    const group = document.createElement('div');
+    group.className = 'month-group';
+    group.innerHTML = buildBarGroupHTML(m, maxVal, trendDisplayMode);
+    area.appendChild(group);
+  });
+  // animate in
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{
+      area.querySelectorAll('.bar').forEach(bar=>{
+        bar.style.height = bar.dataset.h + 'px';
+      });
+      area.querySelectorAll('.bar-stack').forEach(stack=>{
+        const green = stack.querySelector('.stack-green-seg');
+        const red = stack.querySelector('.stack-red-seg');
+        if(green) green.style.height = stack.dataset.gh + 'px';
+        if(red) red.style.height = stack.dataset.rh + 'px';
+      });
+      area.querySelectorAll('.bar-val').forEach(v=>{
+        v.textContent = v.dataset.target;
+        v.classList.add('show');
+      });
+    }, 60);
+  });
+}
+
+const openSummaries = new Set(['habit', state.categories[state.categories.length-1] ? state.categories[state.categories.length-1].id : null, 'all']);
+
+function statBox(label, value, cls){
+  return `<div class="stat-box"><div class="stat-label">${escapeHtml(label)}</div><div class="stat-value ${cls||''}">${value}</div></div>`;
+}
+
+function renderSummaryList(){
+  const list = document.getElementById('summary-list');
+  let html = '';
+
+  const overall = computeOverallStats();
+  const allOpen = openSummaries.has('all');
+  html += `
+    <div class="summary-item ${allOpen?'open':''}" data-summary="all">
+      <div class="summary-head"><div class="summary-head-title">Summarize All</div><i class="fa-solid fa-chevron-down"></i></div>
+      <div class="summary-body">
+        <div class="stat-grid">
+          ${statBox('Total completed', overall.green, 'green-txt')}
+          ${statBox('Total failed', overall.red, 'red-txt')}
+          ${statBox('Success rate', overall.successRate+'%', 'orange-txt')}
+          ${statBox('Best day', overall.bestDay)}
+          ${statBox('Categories tracked', overall.categoriesCount)}
+          ${statBox('Top category', overall.bestCat ? overall.bestCat+' ('+overall.bestCatRate+'%)' : '—')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  state.categories.forEach(cat=>{
+    const s = computeCategoryStats(cat.id);
+    const isOpen = openSummaries.has(cat.id);
+    html += `
+      <div class="summary-item ${isOpen?'open':''}" data-summary="${cat.id}">
+        <div class="summary-head"><div class="summary-head-title">${escapeHtml(cat.name)}</div><i class="fa-solid fa-chevron-down"></i></div>
+        <div class="summary-body">
+          <div class="stat-grid">
+            ${statBox('Total completed', s.green, 'green-txt')}
+            ${statBox('Total failed', s.red, 'red-txt')}
+            ${statBox('Success rate', s.successRate+'%', 'orange-txt')}
+            ${statBox('Best day', s.bestDay)}
+            ${statBox('Current streak', s.currentStreak+' days', 'orange-txt')}
+            ${statBox('Longest streak', s.longestStreak+' days')}
+            ${statBox('This month', s.monthGreen+' ✓ / '+s.monthRed+' ✗')}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  list.innerHTML = html;
+  list.querySelectorAll('.summary-head').forEach(head=>{
+    head.addEventListener('click', ()=>{
+      const item = head.parentElement;
+      const key = item.dataset.summary;
+      if(openSummaries.has(key)){ openSummaries.delete(key); item.classList.remove('open'); }
+      else { openSummaries.add(key); item.classList.add('open'); }
+    });
+  });
+}
+
+function renderTrendPage(){
+  populateTrendSelect();
+  document.querySelectorAll('#trend-range-row .range-pill').forEach(b=>{
+    b.classList.toggle('active', b.dataset.range === selectedTrendRange);
+  });
+  document.querySelectorAll('#trend-display-row .display-toggle-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode === trendDisplayMode);
+  });
+  const cat = state.categories.find(c=>c.id===selectedTrendCat);
+  document.getElementById('trend-current-cat').textContent = cat ? cat.name : 'Trend';
+  renderChart();
+  renderSummaryList();
+}
+
+document.getElementById('trend-cat-select').addEventListener('change', (e)=>{
+  selectedTrendCat = e.target.value;
+  document.getElementById('trend-current-cat').textContent =
+    (state.categories.find(c=>c.id===selectedTrendCat)||{}).name || 'Trend';
+  renderChart();
+});
+
+document.querySelectorAll('#trend-range-row .range-pill').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    selectedTrendRange = btn.dataset.range;
+    document.querySelectorAll('#trend-range-row .range-pill').forEach(b=>b.classList.toggle('active', b===btn));
+    renderChart();
+  });
+});
+
+document.querySelectorAll('#trend-display-row .display-toggle-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    trendDisplayMode = btn.dataset.mode;
+    document.querySelectorAll('#trend-display-row .display-toggle-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    renderChart();
+  });
+});
+
+/* ============================================================
+   RENDER: NOTES PAGE
+============================================================ */
+let noteSearchTerm = '';
+
+function renderNotesPage(){
+  const list = document.getElementById('notes-list');
+  let notes = state.notes.slice();
+  if(noteSearchTerm){
+    const q = noteSearchTerm.toLowerCase();
+    notes = notes.filter(n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
+  }
+  notes.sort((a,b)=>{
+    if(!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+    return b.date.localeCompare(a.date);
+  });
+
+  if(notes.length===0){
+    list.innerHTML = `<div class="empty-state">
+      <i class="fa-regular fa-note-sticky"></i>
+      ${state.notes.length===0 ? 'No notes yet. Tap + to add one.' : 'No notes match your search.'}
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = notes.map(n=>`
+    <div class="note-card" data-note="${n.id}">
+      <div class="note-card-top">
+        <div class="note-title">${escapeHtml(n.title || 'Untitled')}</div>
+        ${n.pinned ? '<i class="fa-solid fa-thumbtack note-pin"></i>' : ''}
+      </div>
+      <div class="note-content">${escapeHtml(n.content)}</div>
+      <div class="note-date">${formatNiceDate(n.date)}</div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-note]').forEach(card=>{
+    card.addEventListener('click', ()=> openNoteEditor(card.dataset.note));
+  });
+}
+
+function formatNiceDate(iso){
+  const parts = iso.split('-').map(Number);
+  const d = new Date(parts[0], parts[1]-1, parts[2]);
+  return `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+document.getElementById('note-search').addEventListener('input', (e)=>{
+  noteSearchTerm = e.target.value.trim();
+  renderNotesPage();
+});
+document.getElementById('btn-add-note').addEventListener('click', ()=> openNoteEditor(null));
+
+function openNoteEditor(noteId){
+  const note = noteId ? state.notes.find(n=>n.id===noteId) : null;
+  openModal(`
+    <div class="modal-title">${note ? 'Edit note' : 'New note'}</div>
+    <input type="text" class="modal-input" id="note-title-input" placeholder="Title" value="${note?escapeHtml(note.title):''}" maxlength="60">
+    <textarea class="modal-textarea" id="note-content-input" placeholder="Write something...">${note?escapeHtml(note.content):''}</textarea>
+    <div class="modal-actions">
+      ${note ? '<button class="btn btn-danger" id="note-delete">Delete</button>' : '<button class="btn btn-secondary" id="note-pin-toggle">'+(note&&note.pinned?'Unpin':'Pin')+'</button>'}
+      <button class="btn btn-primary" id="note-save">Save</button>
+    </div>
+    ${note ? `<button class="btn btn-secondary btn-full" id="note-pin-toggle" style="margin-top:10px;">${note.pinned?'Unpin note':'Pin note'}</button>` : ''}
+  `);
+  document.getElementById('note-title-input').focus();
+
+  if(document.getElementById('note-delete')){
+    document.getElementById('note-delete').onclick = ()=>{
+      closeModal();
+      confirmDialog('Delete note', 'This note will be permanently deleted.', 'Delete', ()=>{
+        state.notes = state.notes.filter(n=>n.id!==noteId);
+        saveData();
+        showToast('Note deleted');
+        renderNotesPage();
+      }, true);
+    };
+  }
+  let pinState = note ? !!note.pinned : false;
+  const pinBtn = document.getElementById('note-pin-toggle');
+  if(pinBtn){
+    pinBtn.onclick = ()=>{
+      pinState = !pinState;
+      pinBtn.textContent = pinState ? 'Unpin note' : 'Pin note';
+    };
+  }
+
+  document.getElementById('note-save').onclick = ()=>{
+    const title = document.getElementById('note-title-input').value.trim();
+    const content = document.getElementById('note-content-input').value.trim();
+    if(!title && !content){ closeModal(); return; }
+    if(note){
+      note.title = title;
+      note.content = content;
+      note.pinned = pinState;
+    } else {
+      state.notes.push({ id: uid('note'), title, content, date: dateKey(new Date()), pinned: pinState });
+    }
+    saveData();
+    closeModal();
+    showToast('Note saved');
+    renderNotesPage();
+  };
+}
+
+/* ============================================================
+   RENDER: SETUP PAGE
+============================================================ */
+function renderSetupPage(){
+  document.querySelectorAll('#theme-toggle button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === state.settings.theme);
+  });
+  document.querySelectorAll('#weekstart-toggle button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.val === state.settings.weekStart);
+  });
+
+  const list = document.getElementById('category-manage-list');
+  if(state.categories.length===0){
+    list.innerHTML = `<div style="padding:16px;color:var(--text-faint);font-size:14px;">No categories yet.</div>`;
+  } else {
+    list.innerHTML = state.categories.map(c=>`
+      <div class="category-manage-item">
+        <span>${escapeHtml(c.name)}</span>
+        <div class="category-manage-actions">
+          <button data-rename="${c.id}"><i class="fa-solid fa-pen"></i></button>
+          <button class="del-btn" data-delete="${c.id}"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+    list.querySelectorAll('[data-rename]').forEach(b=>b.addEventListener('click', ()=>promptRenameCategory(b.dataset.rename)));
+    list.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click', ()=>promptDeleteCategory(b.dataset.delete)));
+  }
+}
+
+document.querySelectorAll('#theme-toggle button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    state.settings.theme = b.dataset.val;
+    document.documentElement.setAttribute('data-theme', state.settings.theme);
+    saveData();
+    renderSetupPage();
+  });
+});
+document.querySelectorAll('#weekstart-toggle button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    state.settings.weekStart = b.dataset.val;
+    currentWeekStart = getWeekStart(selectedDate, state.settings.weekStart);
+    saveData();
+    renderSetupPage();
+    if(currentPage==='journals') renderJournalsPage();
+  });
+});
+
+document.getElementById('btn-add-cat-setup').addEventListener('click', ()=>{
+  const input = document.getElementById('new-cat-input');
+  const name = input.value.trim();
+  if(!name) return;
+  state.categories.push({id: uid('cat'), name});
+  saveData();
+  input.value = '';
+  showToast('Category added');
+  renderSetupPage();
+});
+document.getElementById('new-cat-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('btn-add-cat-setup').click();
+});
+
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'daily-habit-backup-'+dateKey(new Date())+'.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Data exported');
+});
+
+document.getElementById('btn-import').addEventListener('click', ()=>{
+  document.getElementById('import-file-input').click();
+});
+document.getElementById('import-file-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      if(!parsed || typeof parsed !== 'object') throw new Error('bad file');
+      confirmDialog('Import data', 'This will replace all current categories, journal entries and notes with the imported file. Continue?', 'Import', ()=>{
+        state = {
+          settings: parsed.settings || defaultData().settings,
+          categories: Array.isArray(parsed.categories) ? parsed.categories : [],
+          dailyData: parsed.dailyData || {},
+          notes: Array.isArray(parsed.notes) ? parsed.notes : []
+        };
+        saveData();
+        document.documentElement.setAttribute('data-theme', state.settings.theme);
+        currentWeekStart = getWeekStart(new Date(), state.settings.weekStart);
+        if(!state.categories.find(c=>c.id===selectedTrendCat)){
+          selectedTrendCat = state.categories.length ? state.categories[0].id : null;
+        }
+        showToast('Data imported');
+        render();
+      });
+    }catch(err){
+      confirmDialog('Import failed', 'That file could not be read. Please choose a valid export file.', 'OK', ()=>{}, true);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('btn-clear-all').addEventListener('click', ()=>{
+  confirmDialog('Clear all data', 'This will permanently delete every category, journal entry and note. This cannot be undone.', 'Clear everything', ()=>{
+    state = defaultData();
+    saveData();
+    document.documentElement.setAttribute('data-theme', state.settings.theme);
+    currentWeekStart = getWeekStart(new Date(), state.settings.weekStart);
+    selectedTrendCat = state.categories.length ? state.categories[state.categories.length-1].id : null;
+    showToast('All data cleared');
+    render();
+  }, true);
+});
+
+/* ============================================================
+   MASTER RENDER
+============================================================ */
+function render(){
+  if(currentPage==='journals') renderJournalsPage();
+  else if(currentPage==='trend') renderTrendPage();
+  else if(currentPage==='notes') renderNotesPage();
+  else if(currentPage==='setup') renderSetupPage();
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+document.documentElement.setAttribute('data-theme', state.settings.theme || 'dark');
+document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id === 'page-'+currentPage));
+document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.page === currentPage));
+render();
+
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
